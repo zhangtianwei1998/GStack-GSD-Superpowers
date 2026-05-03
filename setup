@@ -10,36 +10,32 @@ SKILLS_DIR="$CLAUDE_DIR/skills"
 echo "=== GStack + GSD + Superpowers Workflow Setup ==="
 echo ""
 
-# 1. Copy execute-phase skill
-echo "[1/3] Installing execute-phase skill..."
+# 1. Copy main workflow skill
+echo "[1/4] Installing gstack-gsd-superpowers skill..."
+mkdir -p "$SKILLS_DIR/gstack-gsd-superpowers"
+cp skills/gstack-gsd-superpowers/SKILL.md "$SKILLS_DIR/gstack-gsd-superpowers/SKILL.md"
+echo "  → ~/.claude/skills/gstack-gsd-superpowers/SKILL.md"
+
+# 2. Copy execute-phase skill
+echo "[2/4] Installing execute-phase skill..."
 mkdir -p "$SKILLS_DIR/execute-phase"
 cp skills/execute-phase/skill.md "$SKILLS_DIR/execute-phase/skill.md"
 echo "  → ~/.claude/skills/execute-phase/skill.md"
 
-# 2. Copy run-phases.sh
-echo "[2/3] Installing run-phases.sh..."
+# 3. Copy run-phases.sh
+echo "[3/4] Installing run-phases.sh..."
 cp scripts/run-phases.sh "$CLAUDE_DIR/run-phases.sh"
 chmod +x "$CLAUDE_DIR/run-phases.sh"
 echo "  → ~/.claude/run-phases.sh"
 
-# 3. Add brainstorm routing rule to CLAUDE.md
-echo "[3/3] Configuring brainstorm routing in CLAUDE.md..."
+# 4. Add brainstorm routing rule to CLAUDE.md
+echo "[4/4] Configuring brainstorm routing in CLAUDE.md..."
 CLAUDE_MD="$CLAUDE_DIR/CLAUDE.md"
 if grep -q "Brainstorm 路由" "$CLAUDE_MD" 2>/dev/null; then
   echo "  → Already configured, skipping"
 else
-  # Insert before @RTK.md line if it exists, otherwise append
-  if grep -q "@RTK.md" "$CLAUDE_MD" 2>/dev/null; then
-    sed -i '' "/@RTK.md/i\\
-\\
-## Brainstorm 路由\\
-\\
-- 任何需要 brainstorm 的请求，默认使用 GStack 多角色流程（调用 GStack 相关技能或命令）\\
-- 仅当用户明确说「使用 superpowers brainstorm」或「用 sp brainstorm」时，才调用 superpowers:brainstorming skill\\
-- GStack 执行完成后，等待用户 review 并 approve 设计文档，再进入 GSD phase 分解步骤\\
-" "$CLAUDE_MD"
-  else
-    cat >> "$CLAUDE_MD" << 'EOF'
+  # Cross-platform: append routing rule (works on macOS and Linux)
+  cat >> "$CLAUDE_MD" << 'EOF'
 
 ## Brainstorm 路由
 
@@ -47,12 +43,17 @@ else
 - 仅当用户明确说「使用 superpowers brainstorm」或「用 sp brainstorm」时，才调用 superpowers:brainstorming skill
 - GStack 执行完成后，等待用户 review 并 approve 设计文档，再进入 GSD phase 分解步骤
 EOF
-  fi
   echo "  → Added routing rule to ~/.claude/CLAUDE.md"
 fi
 
 echo ""
+echo ""
 echo "=== Setup complete ==="
+echo ""
+echo "Installed:"
+echo "  ~/.claude/skills/gstack-gsd-superpowers/SKILL.md  (main workflow skill)"
+echo "  ~/.claude/skills/execute-phase/skill.md            (per-phase execution prompt)"
+echo "  ~/.claude/run-phases.sh                            (unattended loop driver)"
 echo ""
 echo "Prerequisites (install separately if not already done):"
 echo "  GStack:    git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup"
@@ -60,6 +61,6 @@ echo "  GSD:       npm install -g get-shit-done-cc"
 echo "  RalphLoop: pipx install ralph-py-cli"
 echo ""
 echo "Usage:"
-echo "  1. Brainstorm (auto-triggered via GStack)"
-echo "  2. /gsd  — decompose into phases"
+echo "  1. Brainstorm — auto-triggered via GStack (default for any brainstorm request)"
+echo "  2. /gsd       — decompose design doc into phases"
 echo "  3. ~/.claude/run-phases.sh <project-path>  — unattended execution"
