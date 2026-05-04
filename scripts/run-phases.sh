@@ -13,8 +13,29 @@ EXECUTE_PHASE_PROMPT="$HOME/.claude/skills/execute-phase/skill.md"
 MAX_ITERATIONS=20
 iteration=0
 
+# Lockfile：防止同一项目并发执行
+# 用项目绝对路径的 hash 作为 lockfile 名，不同项目互不影响
+ABS_PROJECT_DIR="$(cd "$PROJECT_DIR" 2>/dev/null && pwd || echo "$PROJECT_DIR")"
+LOCKFILE="/tmp/run-phases-$(echo "$ABS_PROJECT_DIR" | tr '/' '-' | tr -d ' ').lock"
+
+if [ -f "$LOCKFILE" ]; then
+  EXISTING_PID=$(cat "$LOCKFILE" 2>/dev/null)
+  if kill -0 "$EXISTING_PID" 2>/dev/null; then
+    echo "ERROR: run-phases.sh is already running for this project (PID $EXISTING_PID)"
+    echo "If this is stale, delete it: rm $LOCKFILE"
+    exit 1
+  else
+    echo "WARNING: Stale lockfile found (PID $EXISTING_PID no longer running). Removing."
+    rm -f "$LOCKFILE"
+  fi
+fi
+
+echo $$ > "$LOCKFILE"
+trap "rm -f '$LOCKFILE'" EXIT
+
 echo "=== run-phases.sh started ==="
-echo "Project: $PROJECT_DIR"
+echo "Project: $ABS_PROJECT_DIR"
+echo "PID: $$  Lockfile: $LOCKFILE"
 echo "Max iterations: $MAX_ITERATIONS"
 
 cd "$PROJECT_DIR"
